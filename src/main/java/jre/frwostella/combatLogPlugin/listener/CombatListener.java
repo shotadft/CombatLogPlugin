@@ -1,5 +1,6 @@
-package jre.frwostella.combatLogPlugin;
+package jre.frwostella.combatLogPlugin.listener;
 
+import jre.frwostella.combatLogPlugin.CombatLogPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -10,7 +11,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
 
-public class CombatListener implements Listener {
+public final class CombatListener implements Listener {
 
     private final CombatManager manager;
 

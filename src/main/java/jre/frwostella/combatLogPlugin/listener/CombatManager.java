@@ -1,26 +1,32 @@
-package jre.frwostella.combatLogPlugin;
+package jre.frwostella.combatLogPlugin.listener;
 
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMaps;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import jre.frwostella.combatLogPlugin.CombatLogPlugin;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class CombatManager {
+import static jre.frwostella.combatLogPlugin.util.TextUtil.color;
+
+public final class CombatManager extends BukkitRunnable {
 
     private final CombatLogPlugin plugin;
 
-    private final Map<UUID, Long> combatMap = new ConcurrentHashMap<>();
+    private final Object2LongMap<UUID> combatMap = Object2LongMaps.synchronize(new Object2LongOpenHashMap<>());
     private final Map<UUID, UUID> lastOpponent = new ConcurrentHashMap<>();
 
     public CombatManager(CombatLogPlugin plugin) {
         this.plugin = plugin;
-        startTask();
+        runTaskTimer(plugin, 0L, 20L);
     }
 
     public void tag(Player p1, Player p2) {
@@ -45,11 +51,8 @@ public class CombatManager {
         }
     }
 
-    public boolean isInCombat(Player player) {
-        Long expireTime = combatMap.get(player.getUniqueId());
-
-        if (expireTime == null) return false;
-
+    public boolean isInCombat(@NonNull Player player) {
+        long expireTime = combatMap.getLong(player.getUniqueId());
         long timeLeft = expireTime - System.currentTimeMillis();
 
         if (timeLeft <= 0) {
@@ -61,7 +64,7 @@ public class CombatManager {
         return true;
     }
 
-    public void handleDeath(Player dead) {
+    public void handleDeath(@NonNull Player dead) {
         UUID opponentUUID = lastOpponent.get(dead.getUniqueId());
         if (opponentUUID != null) {
             Player opponent = Bukkit.getPlayer(opponentUUID);
@@ -74,45 +77,36 @@ public class CombatManager {
         remove(dead);
     }
 
-    public void remove(Player player) {
-        combatMap.remove(player.getUniqueId());
+    public void remove(@NonNull Player player) {
+        combatMap.removeLong(player.getUniqueId());
         lastOpponent.remove(player.getUniqueId());
     }
 
-    public int getTimeLeft(Player player) {
+    public int getTimeLeft(@NonNull Player player) {
         if (!combatMap.containsKey(player.getUniqueId())) return 0;
 
-        return (int) ((combatMap.get(player.getUniqueId())
+        return (int) ((combatMap.getLong(player.getUniqueId())
                 - System.currentTimeMillis()) / 1000);
     }
 
-    private void startTask() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                for (UUID uuid : combatMap.keySet()) {
-                    Player player = Bukkit.getPlayer(uuid);
-                    if (player == null) continue;
+    @Override
+    public void run() {
+        for (UUID uuid : combatMap.keySet()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) continue;
 
-                    if (!isInCombat(player)) continue;
+            if (!isInCombat(player)) continue;
 
-                    int timeLeft = getTimeLeft(player);
+            int timeLeft = getTimeLeft(player);
 
-                    String _msg = plugin.getConfig()
-                            .getString("messages.actionbar");
-                    if (_msg == null) return;
-                    String msg = _msg.replace("%time%", String.valueOf(timeLeft));
+            String _msg = plugin.getConfig().getString("messages.actionbar");
+            if (_msg == null) return;
+            String msg = _msg.replace("%time%", String.valueOf(timeLeft));
 
-                    player.spigot().sendMessage(
-                            ChatMessageType.ACTION_BAR,
-                            new TextComponent(color(msg))
-                    );
-                }
-            }
-        }.runTaskTimer(plugin, 0L, 20L);
-    }
-
-    private String color(String msg) {
-        return ChatColor.translateAlternateColorCodes('&', msg);
+            player.spigot().sendMessage(
+                    ChatMessageType.ACTION_BAR,
+                    new TextComponent(color(msg))
+            );
+        }
     }
 }

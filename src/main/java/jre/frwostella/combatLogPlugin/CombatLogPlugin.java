@@ -1,12 +1,15 @@
 package jre.frwostella.combatLogPlugin;
 
-import org.bukkit.ChatColor;
+import jre.frwostella.combatLogPlugin.listener.CombatListener;
+import jre.frwostella.combatLogPlugin.listener.CombatManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.NonNull;
 
-public class CombatLogPlugin extends JavaPlugin {
+import static jre.frwostella.combatLogPlugin.util.TextUtil.color;
+
+public final class CombatLogPlugin extends JavaPlugin {
 
     private static CombatLogPlugin instance;
     private CombatManager combatManager;
@@ -23,9 +26,7 @@ public class CombatLogPlugin extends JavaPlugin {
 
         combatManager = new CombatManager(this);
 
-        getServer().getPluginManager().registerEvents(
-                new CombatListener(combatManager), this
-        );
+        getServer().getPluginManager().registerEvents(new CombatListener(combatManager), this);
 
         getLogger().info("CombatLog Enabled!");
     }
@@ -56,9 +57,5 @@ public class CombatLogPlugin extends JavaPlugin {
         }
 
         return false;
-    }
-
-    private String color(String msg) {
-        return ChatColor.translateAlternateColorCodes('&', msg);
     }
 }
